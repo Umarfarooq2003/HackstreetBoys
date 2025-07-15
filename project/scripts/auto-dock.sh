@@ -196,9 +196,22 @@ generate_nodejs_dockerfile() {
     
     # Determine if it's a build-required project (React, Vue, etc.)
     local needs_build=false
+    local is_react_app=false
     if [ -f "package.json" ]; then
         if grep -q "react\|vue\|angular\|vite\|webpack\|next" package.json; then
             needs_build=true
+        fi
+        if grep -q "react" package.json; then
+            is_react_app=true
+        fi
+    fi
+    
+    # Check if it's a Create React App
+    local is_cra=false
+    if [ -f "package.json" ] && command_exists jq; then
+        local react_scripts=$(jq -r '.dependencies."react-scripts" // .devDependencies."react-scripts" // ""' package.json)
+        if [ "$react_scripts" != "" ]; then
+            is_cra=true
         fi
     fi
     
@@ -210,11 +223,13 @@ FROM node:${node_version}-alpine
 # Set working directory
 WORKDIR /app
 
+# Install serve globally for production serving
+RUN npm install -g serve
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -234,22 +249,43 @@ EOF
 # Expose port
 EXPOSE $PORT
 
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+USER nextjs
 # Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
-    CMD curl -f http://localhost:$PORT/health || curl -f http://localhost:$PORT || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \\
+    CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT || exit 1
 
 # Start the application
 CMD ["$START_SCRIPT"]
 EOF
 
-    # Fix CMD format
-    if [[ "$START_SCRIPT" == npm* ]]; then
-        sed -i 's/CMD \["\(npm.*\)"\]/CMD \1/' Dockerfile
-        sed -i 's/CMD npm/CMD ["npm",/' Dockerfile
-        sed -i 's/npm start/npm", "start"]/' Dockerfile
-        sed -i 's/npm run \(.*\)/npm", "run", "\1"]/' Dockerfile
-    fi
-    
+    # Determine the correct start command
+    if [ "$is_cra" = true ] && [ "$needs_build" = true ]; then
+        # For built Create React App, use serve
+        cat >> Dockerfile << EOF
+# Start the application using serve for built React apps
+CMD ["serve", "-s", "build", "-l", "$PORT"]
+EOF
+    elif [ "$is_react_app" = true ] && [ "$needs_build" = false ]; then
+        # For development React apps
+        cat >> Dockerfile << EOF
+# Start the application in development mode
+ENV HOST=0.0.0.0
+ENV PORT=$PORT
+CMD ["npm", "start"]
+EOF
+    elif [ "$needs_build" = true ]; then
+        # For other built applications (Vue, Angular, etc.)
+        cat >> Dockerfile << EOF
+# Start the application using serve
+CMD ["serve", "-s", "build", "-l", "$PORT"]
+EOF
+    else
+        # For regular Node.js applications
+        cat >> Dockerfile << EOF
+# Start the application
     print_success "Dockerfile generated successfully"
 }
 
