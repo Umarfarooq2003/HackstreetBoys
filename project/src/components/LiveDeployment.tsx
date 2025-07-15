@@ -1,6 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { ExternalLink, Play, Square, Trash2, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { DockerService, DockerExecutionResult, DockerExecutionProgress } from '../services/dockerService';
+import React, { useState } from 'react';
+import {
+  ExternalLink,
+  Play,
+  Square,
+  Trash2,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
+import {
+  DockerService,
+  DockerExecutionResult,
+  DockerExecutionProgress,
+} from '../services/dockerService';
 
 interface LiveDeploymentProps {
   repoUrl: string;
@@ -22,22 +35,18 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
     setLogs([]);
     setProgress(null);
 
-    const result = await dockerService.executeDockerSetup(
-      repoUrl,
-      port,
-      (progressUpdate) => {
-        setProgress(progressUpdate);
-        if (progressUpdate.message) {
-          setLogs(prev => [...prev, progressUpdate.message]);
-        }
+    const result = await dockerService.executeDockerSetup(repoUrl, port, (progressUpdate) => {
+      setProgress(progressUpdate);
+      if (progressUpdate.message) {
+        setLogs((prev) => [...prev, progressUpdate.message]);
       }
-    );
+    });
 
     setDeploymentResult(result);
     setIsDeploying(false);
 
     if (result.success && result.logs) {
-      setLogs(prev => [...prev, ...result.logs]);
+      setLogs((prev) => [...prev, ...result.logs]);
     }
   };
 
@@ -45,7 +54,7 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
     if (deploymentResult?.containerName) {
       await dockerService.stopContainer(deploymentResult.containerName);
       setDeploymentResult(null);
-      setLogs(prev => [...prev, 'Container stopped']);
+      setLogs((prev) => [...prev, 'Container stopped']);
     }
   };
 
@@ -53,7 +62,7 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
     if (deploymentResult?.containerName) {
       await dockerService.removeContainer(deploymentResult.containerName);
       setDeploymentResult(null);
-      setLogs(prev => [...prev, 'Container removed']);
+      setLogs((prev) => [...prev, 'Container removed']);
     }
   };
 
@@ -61,13 +70,12 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
     dockerService.cancelExecution();
     setIsDeploying(false);
     setProgress(null);
-    setLogs(prev => [...prev, 'Deployment cancelled']);
+    setLogs((prev) => [...prev, 'Deployment cancelled']);
   };
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -84,13 +92,11 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
         </div>
 
         <div className="p-6">
-          {/* Repository Info */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-gray-900 mb-2">Repository</h3>
             <p className="text-gray-700 font-mono text-sm">{repoUrl}</p>
           </div>
 
-          {/* Port Configuration */}
           <div className="mb-6">
             <label htmlFor="port" className="block text-sm font-medium text-gray-700 mb-2">
               Target Port
@@ -107,7 +113,6 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
             />
           </div>
 
-          {/* Control Buttons */}
           <div className="flex space-x-4 mb-6">
             {!deploymentResult?.success && !isDeploying && (
               <button
@@ -149,7 +154,6 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
             )}
           </div>
 
-          {/* Progress Indicator */}
           {progress && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -157,7 +161,7 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
                 <span className="text-sm text-gray-500">{Math.round(progress.progress)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gradient-to-r from-blue-600 to-blue-700 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress.progress}%` }}
                 />
@@ -165,30 +169,37 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
             </div>
           )}
 
-          {/* Deployment Result */}
           {deploymentResult && (
-            <div className={`rounded-lg p-4 mb-6 ${
-              deploymentResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-            }`}>
+            <div
+              className={`rounded-lg p-4 mb-6 ${
+                deploymentResult.success
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-red-50 border border-red-200'
+              }`}
+            >
               <div className="flex items-center space-x-2 mb-2">
                 {deploymentResult.success ? (
                   <CheckCircle className="h-5 w-5 text-green-600" />
                 ) : (
                   <AlertCircle className="h-5 w-5 text-red-600" />
                 )}
-                <h3 className={`font-semibold ${
-                  deploymentResult.success ? 'text-green-900' : 'text-red-900'
-                }`}>
+                <h3
+                  className={`font-semibold ${
+                    deploymentResult.success ? 'text-green-900' : 'text-red-900'
+                  }`}
+                >
                   {deploymentResult.success ? 'Deployment Successful!' : 'Deployment Failed'}
                 </h3>
               </div>
-              <p className={`text-sm ${
-                deploymentResult.success ? 'text-green-800' : 'text-red-800'
-              }`}>
+              <p
+                className={`text-sm ${
+                  deploymentResult.success ? 'text-green-800' : 'text-red-800'
+                }`}
+              >
                 {deploymentResult.message}
               </p>
 
-              {deploymentResult.success && deploymentResult.url && (
+              {deploymentResult.success && (
                 <div className="mt-4">
                   <a
                     href={deploymentResult.url}
@@ -217,7 +228,6 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
             </div>
           )}
 
-          {/* Logs */}
           <div className="bg-gray-900 rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-3">
               <FileText className="h-5 w-5 text-gray-400" />
@@ -230,14 +240,16 @@ export const LiveDeployment: React.FC<LiveDeploymentProps> = ({ repoUrl, onBack 
               ) : (
                 logs.map((log, index) => (
                   <div key={index} className="text-green-400 mb-1">
-                    <span className="text-gray-500">[{new Date().toLocaleTimeString()}]</span> {log}
+                    <span className="text-gray-500">
+                      [{new Date().toLocaleTimeString()}]
+                    </span>{' '}
+                    {log}
                   </div>
                 ))
               )}
             </div>
           </div>
 
-          {/* Instructions */}
           <div className="mt-6 bg-blue-50 rounded-lg p-4">
             <h3 className="font-semibold text-blue-900 mb-2">What happens during deployment:</h3>
             <ul className="text-blue-800 text-sm space-y-1">

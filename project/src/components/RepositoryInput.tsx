@@ -19,21 +19,24 @@ export const RepositoryInput: React.FC<RepositoryInputProps> = ({ onAnalyze }) =
     const owner = match[1];
     const repo = match[2].replace(/\.git$/, ''); // Remove .git if it exists
 
-    const token = import.meta.env.VITE_HF_TOKEN;
+    const token = import.meta.env.VITE_GITHUB_TOKEN;
+
 
     try {
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
       const res = await fetch(apiUrl, {
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  headers: {
+    Accept: 'application/vnd.github+json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  },
+});
+
 
       if (!res.ok) return false;
 
       const data = await res.json();
-      return data && data.visibility === 'public' || data.private === false;
+      return data && (data.private === false || data.visibility === 'public');
+
     } catch (err) {
       console.error('GitHub repo check failed:', err);
       return false;
