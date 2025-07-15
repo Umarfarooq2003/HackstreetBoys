@@ -19,12 +19,14 @@ export const RepositoryInput: React.FC<RepositoryInputProps> = ({ onAnalyze }) =
     const owner = match[1];
     const repo = match[2].replace(/\.git$/, ''); // Remove .git if it exists
 
+    const token = import.meta.env.VITE_HF_TOKEN;
+
     try {
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
       const res = await fetch(apiUrl, {
         headers: {
           Accept: 'application/vnd.github+json',
-          Authorization : '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',
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -77,7 +79,7 @@ export const RepositoryInput: React.FC<RepositoryInputProps> = ({ onAnalyze }) =
           Containerize Any GitHub Repository
         </h2>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Paste a GitHub repository URL and let our AI analyze the code structure, 
+          Paste a GitHub repository URL and let our AI analyze the code structure,
           detect dependencies, and generate production-ready Docker configurations.
         </p>
       </div>
